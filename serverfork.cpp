@@ -15,7 +15,7 @@ int main(int argc, char *argv[]){
   /* Do more magic */
 
 
-  
+  printf("test for git");
   printf("done.\n");
   return(0);
 
