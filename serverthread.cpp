@@ -7,6 +7,8 @@
 
 /* You will to add includes here */
 
+//test
+
 //returns the amount of chars in the char*[]
 int checkForChar(char p[], const char searchingFor = '/')
 {
