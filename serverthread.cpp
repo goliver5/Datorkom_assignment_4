@@ -58,19 +58,61 @@ void *get_in_addr(struct sockaddr *sa)
   return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 };
 
+void handleRequest(int sockfd, char* fileName)
+{
+  printf("Got the right info UwU \n");
+  
+  //char* dataFromFile = malloc()
+
+  //ANVÄND FILENAME FÖR ATT LÄSA FILENS BINÄRA DATA
+
+  char buf[256];
+  sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", fileName);
+
+  //sending msg back to client
+  if(send(sockfd, buf, strlen(buf), 0) == -1)
+  {
+    printf("sending message error\n");
+  }
+
+};
+
 void *threadTest(void *arg)
 {
-  // typecast arg till den struct jag villl använda
-  printf("thread test\n");
+
+  //typecasting the argument to the data thats in the argument
+  int sockfd = *(int*)arg;
+  char buf[256];
+
+  if (recv(sockfd, buf, sizeof(buf), 0) == -1)
+  {
+    printf("recv error\n");
+  }
+
+  printf("recv buf: {%s}\n", buf);
+  char* token = buf;
+  char* method = strtok_r(token," ", &token);
+
+  printf("after strtok_r token: {%s}\n", token);
+  printf("data1: {%s}\n", method);
+
+  if(strcmp(method, "GET") == 0)
+  {
+    char* fileName = strtok_r(token," ", &token);
+
+    handleRequest(sockfd, fileName);
+  }
+  else
+  {
+    printf("Wrong method\n");
+  }
+  printf("thread test Done\n");
 };
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-
-  /* Do more magic */
-
   // if(argc < 0) FUNKAR INTE
   // {
   //   printf("not enough arguments\n");
@@ -132,7 +174,7 @@ int main(int argc, char *argv[])
   void *ret_join;
 
   // pthread_create(thread,its attribute, the function to run, args to that function)
-  pthread_create(&testThread, NULL, threadTest, NULL);
+  //pthread_create(&testThread, NULL, threadTest, NULL);
   // pthread_join(testThread, NULL);
   while (1)
   {
@@ -145,6 +187,7 @@ int main(int argc, char *argv[])
     if (newfd == -1)
     {
       perror("accept");
+      
     }
     else
     {
@@ -154,7 +197,7 @@ int main(int argc, char *argv[])
                        get_in_addr((struct sockaddr *)&remoteaddr),
                        remoteIP, INET6_ADDRSTRLEN),
              newfd);
-      pthread_create(&testThread, NULL, threadTest, NULL);
+      pthread_create(&testThread, NULL, threadTest, &newfd);
     }
 
   }
