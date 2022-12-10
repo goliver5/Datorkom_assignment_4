@@ -9,8 +9,13 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <pthread.h>
+#include <fstream>
+#include <vector>
+#include <iterator>
 
 /* You will to add includes here */
+
+using namespace std;
 
 // returns the amount of chars in the char*[]
 int checkForChar(char p[], const char searchingFor = '/')
@@ -58,30 +63,66 @@ void *get_in_addr(struct sockaddr *sa)
   return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 };
 
-void handleRequest(int sockfd, char* fileName)
+void handleRequest(int sockfd, char *fileName)
 {
-  printf("Got the right info UwU \n");
-  
-  //char* dataFromFile = malloc()
+  printf("Opening File: {%s} \n", fileName);
 
-  //ANVÄND FILENAME FÖR ATT LÄSA FILENS BINÄRA DATA
+  int length;
+  char buffer[10000];
 
-  char buf[256];
-  sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", fileName);
+  // std::ifstream file(fileName, ios::binary);
+  FILE *file = fopen(fileName, "rb");
 
-  //sending msg back to client
-  if(send(sockfd, buf, strlen(buf), 0) == -1)
+  int n = 0;
+  int count = 0;
+
+  // nr of bytes
+  int size = ftell(file);
+
+  if (file != NULL)
+  {
+    while (!feof(file))
+    {
+      n = fread(buffer, 1, sizeof(buffer), file);
+      count += n;
+    }
+  }
+  printf("count: %d", count);
+  printf("Buffer: {%s}\n", buffer);
+  // if(file)
+  // {
+
+  //   printf("reading\n");
+  //   while(file->read(buffer,sizeof(buffer)))
+  //   {
+  //     printf("bytes read: {%d}\n",file->gcount());
+  //   }
+  // }
+  // else
+  // {
+  //   printf("failed to open binary file\n");
+  // }
+
+  // char* dataFromFile = malloc()
+
+  // ANVÄND FILENAME FÖR ATT LÄSA FILENS BINÄRA DATA
+
+  char buf[20500];
+  sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
+
+  // sending msg back to client
+  if (send(sockfd, buf, sizeof(buf), 0) == -1)
   {
     printf("sending message error\n");
   }
-
+  
 };
 
 void *threadTest(void *arg)
 {
 
-  //typecasting the argument to the data thats in the argument
-  int sockfd = *(int*)arg;
+  // typecasting the argument to the data thats in the argument
+  int sockfd = *(int *)arg;
   char buf[256];
 
   if (recv(sockfd, buf, sizeof(buf), 0) == -1)
@@ -90,15 +131,47 @@ void *threadTest(void *arg)
   }
 
   printf("recv buf: {%s}\n", buf);
-  char* token = buf;
-  char* method = strtok_r(token," ", &token);
+  char *token = buf;
+  char *method = strtok_r(token, "/", &token);
+
+  // if the filename token returns null the given char is invalid
+  if (method == NULL)
+  {
+    printf("method token returned NULL, the given char is invalid\n");
+    return nullptr;
+  }
 
   printf("after strtok_r token: {%s}\n", token);
   printf("data1: {%s}\n", method);
 
-  if(strcmp(method, "GET") == 0)
+  if (strcmp(method, "GET ") == 0)
   {
-    char* fileName = strtok_r(token," ", &token);
+    char *fileName = strtok_r(token, " ", &token);
+    // if the filename token returns null the given char is invalid
+    if (fileName == NULL)
+    {
+      printf("Filename token returned NULL, the given char is invalid\n");
+      return nullptr;
+    }
+
+    // char* realFileName = strtok_r(realFileName,"/", &realFileName);
+    // printf("realFileName: {%s}", realFileName);
+
+    char *httpProtocol = strtok_r(token, "\n", &token);
+    if (httpProtocol == NULL)
+    {
+      printf("httpProtocol token returned NULL, the given char is invalid\n");
+      return nullptr;
+    }
+    printf("Http protocl: {%s}\n", httpProtocol);
+
+    int nrOfSlashes = checkForChar(fileName, '/');
+    printf("nrOfSlashes: %d\n", nrOfSlashes);
+    if (nrOfSlashes > 3)
+    {
+      printf("Given char contains more than 3 '/'\n");
+      return nullptr;
+    }
 
     handleRequest(sockfd, fileName);
   }
@@ -107,9 +180,9 @@ void *threadTest(void *arg)
     printf("Wrong method\n");
   }
   printf("thread test Done\n");
-};
 
-using namespace std;
+  close(sockfd);
+};
 
 int main(int argc, char *argv[])
 {
@@ -169,15 +242,15 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  // thread test
-  pthread_t testThread;
-  void *ret_join;
-
   // pthread_create(thread,its attribute, the function to run, args to that function)
-  //pthread_create(&testThread, NULL, threadTest, NULL);
+  // pthread_create(&testThread, NULL, threadTest, NULL);
   // pthread_join(testThread, NULL);
   while (1)
   {
+    // thread test
+    pthread_t testThread;
+    void *ret_join;
+
     // handle new connections
     socklen_t addrlen = sizeof remoteaddr;
     int newfd = accept(listener,
@@ -187,7 +260,6 @@ int main(int argc, char *argv[])
     if (newfd == -1)
     {
       perror("accept");
-      
     }
     else
     {
@@ -197,12 +269,10 @@ int main(int argc, char *argv[])
                        get_in_addr((struct sockaddr *)&remoteaddr),
                        remoteIP, INET6_ADDRSTRLEN),
              newfd);
+
       pthread_create(&testThread, NULL, threadTest, &newfd);
     }
-
   }
-
-
 
   return (0);
 }
