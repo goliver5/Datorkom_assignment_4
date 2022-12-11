@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
 #include <cstring>
 
 /* You will to add includes here */
@@ -32,9 +33,6 @@ void handleRequest(int sockfd, char *fileName)
   printf("Opening File: {%s} \n", fileName);
 
   int length;
-  char buffer[10000];
-  memset(buffer, 0, sizeof(buffer));
-
   // std::ifstream file(fileName, ios::binary);
   FILE *file = fopen(fileName, "rb");
 
@@ -46,27 +44,45 @@ void handleRequest(int sockfd, char *fileName)
 
   if (file != NULL)
   {
+    printf("Opened file %s\n", fileName);
+    char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
+    // sending msg back to client
+    if (send(sockfd, ok, sizeof(ok), 0) == -1)
+    {
+      printf("sending message error\n");
+    }
+    fseek(file, 0, SEEK_END);
     size = ftell(file);
+    printf("size: %d", size);
+    fseek(file, 0, SEEK_SET);
+
+    char buffer[size + 1];
+    memset(buffer, 0, sizeof(buffer));
     while (!feof(file))
     {
       n = fread(buffer, 1, sizeof(buffer), file);
       count += n;
     }
+
     printf("closing file\n");
     fclose(file);
 
     printf("count: %d", count);
     printf("Buffer: {%s}\n", buffer);
 
-    char buf[20500];
+    char buf[20000];
     memset(buf, 0, sizeof(buf));
 
-    sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
+    // sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
 
     // sending msg back to client
-    if (send(sockfd, buf, sizeof(buf), 0) == -1)
+    if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
     {
       printf("sending message error\n");
+    }
+    else
+    {
+      printf("Sent buffer size of buffer: %d\n", sizeof(buffer));
     }
   }
   else
@@ -81,7 +97,7 @@ void handleTheConnection(int &sockfd)
 
   // typecasting the argument to the data thats in the argument
 
-  char buf[256];
+  char buf[100];
   memset(buf, 0, sizeof(buf));
 
   if (recv(sockfd, buf, sizeof(buf), 0) == -1)
@@ -100,8 +116,8 @@ void handleTheConnection(int &sockfd)
     return;
   }
 
-  printf("after strtok_r token: {%s}\n", token);
-  printf("data1: {%s}\n", method);
+  // printf("after strtok_r token: {%s}\n", token);
+  // printf("data1: {%s}\n", method);
 
   if (strcmp(method, "GET ") == 0)
   {
@@ -112,36 +128,48 @@ void handleTheConnection(int &sockfd)
       printf("Filename token returned NULL, the given char is invalid\n");
       return;
     }
-
+    printf("Token: {%s}\n", token);
     char *httpProtocol = strtok_r(token, "\n", &token);
+
     if (httpProtocol == NULL)
     {
       printf("httpProtocol token returned NULL, the given char is invalid\n");
       return;
     }
-    printf("Http protocl: {%s}\n", httpProtocol);
+    printf("FileName: {%s}\n", fileName);
+    printf("method: {%s}\n", method);
+
+    // char lol[] = "HTTP/1.1";
+    // for (int i = 0; i < 8; i++)
+    // {
+    //   printf("compare: {%c} = {%c}",token[i],lol[i]);
+    //   if(httpProtocol[i] != lol[i])
+    //   {
+    //     printf("cmpr failed: {%c} = {%c}",token[i],lol[i]);
+    //   }
+    // }
 
     int nrOfSlashes = checkForChar(fileName, '/');
-    printf("nrOfSlashes: %d\n", nrOfSlashes);
+    // printf("nrOfSlashes: %d\n", nrOfSlashes);
     if (nrOfSlashes > 3)
     {
       printf("Given char contains more than 3 '/'\n");
       return;
     }
     // got the right http protocol
-    if (strcmp(httpProtocol, "HTTP/1.1") == 0)
-    {
+    // if (strcmp(httpProtocol, "HTTP/1.1") == 0)
+    // {
       handleRequest(sockfd, fileName);
-    }
-    else
-    {
-      printf("wrong protocol sending error MSG\n");
-      char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
-      if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
-      {
-        printf("sending message error\n");
-      }
-    }
+    // }
+    // else
+    // {
+    //   printf("wrong HTTP/1.1 protocol sending error MSG\n");
+    //   char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
+    //   if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
+    //   {
+    //     printf("sending message error\n");
+    //   }
+    // }
   }
   else
   {
@@ -149,7 +177,7 @@ void handleTheConnection(int &sockfd)
   }
   printf("fork Done\n");
 
-  close(sockfd);
+  // close(sockfd);
 };
 
 void *get_in_addr(struct sockaddr *sa)
@@ -218,6 +246,8 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  signal(SIGPIPE, SIG_IGN);
+
   while (1)
   {
 
@@ -245,8 +275,11 @@ int main(int argc, char *argv[])
       {
         handleTheConnection(newfd);
         printf("Done with the fork\n");
-        break;
+        close(newfd);
+        return 0;
       }
+      pid = wait(NULL);
+      close(newfd);
     }
   }
 

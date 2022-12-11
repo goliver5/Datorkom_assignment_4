@@ -13,6 +13,8 @@
 #include <vector>
 #include <iterator>
 
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /* You will to add includes here */
 
 using namespace std;
@@ -67,37 +69,63 @@ void handleRequest(int sockfd, char *fileName)
 {
   printf("Opening File: {%s} \n", fileName);
 
-  int size = 0;
-  char buffer[10000];
-
+  int length;
   // std::ifstream file(fileName, ios::binary);
   FILE *file = fopen(fileName, "rb");
 
+  int size = 0;
   int n = 0;
   int count = 0;
 
+  // nr of bytes
+
   if (file != NULL)
   {
-
-    // nr of bytes
+    printf("Opened file %s\n", fileName);
+    char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
+    // sending msg back to client
+    if (send(sockfd, ok, sizeof(ok), 0) == -1)
+    {
+      printf("sending message error\n");
+    }
+    fseek(file, 0, SEEK_END);
     size = ftell(file);
+    printf("size: %d", size);
+    fseek(file, 0, SEEK_SET);
 
+    char buffer[size + 1];
+    memset(buffer, 0, sizeof(buffer));
     while (!feof(file))
     {
       n = fread(buffer, 1, sizeof(buffer), file);
       count += n;
     }
+
+    printf("closing file\n");
+    fclose(file);
+
+    printf("count: %d", count);
+    printf("Buffer: {%s}\n", buffer);
+
+    char buf[20000];
+    memset(buf, 0, sizeof(buf));
+
+    // sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
+
+    // sending msg back to client
+    if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
+    {
+      printf("sending message error\n");
+    }
+    else
+    {
+      printf("Sent buffer size of buffer: %d\n", sizeof(buffer));
+    }
   }
-  printf("count: %d", count);
-  printf("Buffer: {%s}\n", buffer);
-
-  char buf[20500];
-  sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
-
-  // sending msg back to client
-  if (send(sockfd, buf, sizeof(buf), 0) == -1)
+  else
   {
-    printf("sending message error\n");
+    // Couldnt open requested file
+    printf("Couldnt open requested file\n");
   }
 };
 
@@ -134,6 +162,7 @@ void *threadTest(void *arg)
     if (fileName == NULL)
     {
       printf("Filename token returned NULL, the given char is invalid\n");
+       close(sockfd);
       return nullptr;
     }
 
@@ -144,6 +173,7 @@ void *threadTest(void *arg)
     if (httpProtocol == NULL)
     {
       printf("httpProtocol token returned NULL, the given char is invalid\n");
+       close(sockfd);
       return nullptr;
     }
     printf("Http protocl: {%s}\n", httpProtocol);
@@ -153,23 +183,26 @@ void *threadTest(void *arg)
     if (nrOfSlashes > 3)
     {
       printf("Given char contains more than 3 '/'\n");
+       close(sockfd);
       return nullptr;
     }
 
     // got the right http protocol
-    if (strcmp(httpProtocol, "HTTP/1.1") == 0)
-    {
+    // if (strcmp(httpProtocol, "HTTP/1.1") == 0)
+    // {
+      pthread_mutex_lock(&mutex);
       handleRequest(sockfd, fileName);
-    }
-    else
-    {
-      printf("wrong protocol sending error MSG\n");
-      char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
-      if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
-      {
-        printf("sending message error\n");
-      }
-    }
+      pthread_mutex_unlock(&mutex);
+    // }
+    // else
+    // {
+    //   printf("wrong protocol sending error MSG\n");
+    //   char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
+    //   if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
+    //   {
+    //     printf("sending message error\n");
+    //   }
+    // }
   }
   else
   {
@@ -270,5 +303,6 @@ int main(int argc, char *argv[])
     }
   }
 
+  close(listener);
   return (0);
 }

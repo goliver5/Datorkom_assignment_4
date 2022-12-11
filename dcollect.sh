@@ -36,7 +36,6 @@ echo -e "$randomString"  > randomFile
 ##echo "Testing that the forked server can retrevie the newly created randomFile"
 fString=$(curl -s http://127.0.0.1:$portFORK/randomFile)
 
-
 if [[ "$randomString" == "$fString" ]]; then
     echo "SUMMARY: The Forked server, correctly delivered the file (randomFile)."
 else
@@ -76,16 +75,16 @@ url=$(basename "$fname" );
 echo "Giving the filesystem some time to stabilize."
 sleep 2
 
-##echo "Testing that the forked server can retrevie the newly created $url"
-fString=$(curl -s http://127.0.0.1:$portFORK/$url)
-if [[ "$randomString2" == "$fString" ]]; then
-    echo "SUMMARY: The Forked server, correctly delivered randomly named the file."
-else
-    echo "ERROR: The Forked server, _did not_ work as expected (random filename)."
-    echo -e "RandomSRC: $randomString2"  
-    echo "   server: $fString"
-    exit 1
-fi
+# ##echo "Testing that the forked server can retrevie the newly created $url"
+# fString=$(curl -s http://127.0.0.1:$portFORK/$url)
+# if [[ "$randomString2" == "$fString" ]]; then
+#     echo "SUMMARY: The Forked server, correctly delivered randomly named the file."
+# else
+#     echo "ERROR: The Forked server, _did not_ work as expected (random filename)."
+#     echo -e "RandomSRC: $randomString2"  
+#     echo "   server: $fString"
+#     exit 1
+# fi
 
 ##echo "Testing that the forked server can retrevie the newly created $url"
 fString=$(curl -s http://127.0.0.1:$portTHREAD/$url)
@@ -99,31 +98,31 @@ else
 fi
 echo "" 
 
-echo "*** Performance forked server."
-echo " "
+# echo "*** Performance forked server."
+# echo " "
 
 
-## Remove any performance data files.
-rm -rf perf_*.txt
-for ((i=1;i<CONCURRENCY;i++)); do
-    for ((k=1;k<REPEAT;k++)); do
-	bonkers=$(ab -n 10000 -c $i http://127.0.0.1:$portFORK/big 2>/dev/null | grep 'Requests per second');
-	value=$(echo "$bonkers" | awk '{print $4}');
-	echo "C=$i,$k => $value";
-	if [[ -z "$value" ]]; then
-	    echo "ERROR: No usefull data was collected from AB, this is an serious ISSUE."
-	    echo "ERROR: Check server on http://127.0.0.1:$portFORK/big "
-	    exit 1
-	fi
-	echo "$value" >> "perf_$i.txt" ;
-    done;
-    echo "Done all repetitions for $i, doing statistics (with awk). "
-    statistics=$(awk '{for(i=1;i<=NF;i++) {sum[i] += $i; sumsq[i] += ($i)^2}} 
-          END {for (i=	     1;i<=NF;i++) { 
-          printf "%f %f \n", sum[i]/NR, sqrt((sumsq[i]-sum[i]^2/NR)/NR)}
-         }' perf_$i.txt)
-    echo "$i => $statistics " | tee -a statistics_fork.log
-done
+# ## Remove any performance data files.
+# rm -rf perf_*.txt
+# for ((i=1;i<CONCURRENCY;i++)); do
+#     for ((k=1;k<REPEAT;k++)); do
+# 	bonkers=$(ab -n 10000 -c $i http://127.0.0.1:$portFORK/big 2>/dev/null | grep 'Requests per second');
+# 	value=$(echo "$bonkers" | awk '{print $4}');
+# 	echo "C=$i,$k => $value";
+# 	if [[ -z "$value" ]]; then
+# 	    echo "ERROR: No usefull data was collected from AB, this is an serious ISSUE."
+# 	    echo "ERROR: Check server on http://127.0.0.1:$portFORK/big "
+# 	    exit 1
+# 	fi
+# 	echo "$value" >> "perf_$i.txt" ;
+#     done;
+#     echo "Done all repetitions for $i, doing statistics (with awk). "
+#     statistics=$(awk '{for(i=1;i<=NF;i++) {sum[i] += $i; sumsq[i] += ($i)^2}} 
+#           END {for (i=	     1;i<=NF;i++) { 
+#           printf "%f %f \n", sum[i]/NR, sqrt((sumsq[i]-sum[i]^2/NR)/NR)}
+#          }' perf_$i.txt)
+#     echo "$i => $statistics " | tee -a statistics_fork.log
+# done
 
 
 echo "*** Performance threaded server."
