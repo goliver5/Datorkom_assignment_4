@@ -33,39 +33,47 @@ void handleRequest(int sockfd, char *fileName)
 
   int length;
   char buffer[10000];
-  memset(buffer,0,sizeof(buffer));
+  memset(buffer, 0, sizeof(buffer));
 
   // std::ifstream file(fileName, ios::binary);
   FILE *file = fopen(fileName, "rb");
 
+  int size = 0;
   int n = 0;
   int count = 0;
 
   // nr of bytes
-  int size = ftell(file);
 
   if (file != NULL)
   {
+    size = ftell(file);
     while (!feof(file))
     {
       n = fread(buffer, 1, sizeof(buffer), file);
       count += n;
     }
+    printf("closing file\n");
+    fclose(file);
+
+    printf("count: %d", count);
+    printf("Buffer: {%s}\n", buffer);
+
+    char buf[20500];
+    memset(buf, 0, sizeof(buf));
+
+    sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
+
+    // sending msg back to client
+    if (send(sockfd, buf, sizeof(buf), 0) == -1)
+    {
+      printf("sending message error\n");
+    }
   }
-  printf("count: %d", count);
-  printf("Buffer: {%s}\n", buffer);
-
-  char buf[20500];
-  memset(buf,0,sizeof(buf));
-  
-  sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
-
-  // sending msg back to client
-  if (send(sockfd, buf, sizeof(buf), 0) == -1)
+  else
   {
-    printf("sending message error\n");
+    // Couldnt open requested file
+    printf("Couldnt open requested file\n");
   }
-  
 };
 
 void handleTheConnection(int &sockfd)
@@ -74,6 +82,7 @@ void handleTheConnection(int &sockfd)
   // typecasting the argument to the data thats in the argument
 
   char buf[256];
+  memset(buf, 0, sizeof(buf));
 
   if (recv(sockfd, buf, sizeof(buf), 0) == -1)
   {
@@ -104,7 +113,6 @@ void handleTheConnection(int &sockfd)
       return;
     }
 
-
     char *httpProtocol = strtok_r(token, "\n", &token);
     if (httpProtocol == NULL)
     {
@@ -120,14 +128,26 @@ void handleTheConnection(int &sockfd)
       printf("Given char contains more than 3 '/'\n");
       return;
     }
-
-    handleRequest(sockfd, fileName);
+    // got the right http protocol
+    if (strcmp(httpProtocol, "HTTP/1.1") == 0)
+    {
+      handleRequest(sockfd, fileName);
+    }
+    else
+    {
+      printf("wrong protocol sending error MSG\n");
+      char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
+      if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
+      {
+        printf("sending message error\n");
+      }
+    }
   }
   else
   {
     printf("Wrong method\n");
   }
-  printf("thread test Done\n");
+  printf("fork Done\n");
 
   close(sockfd);
 };
@@ -224,6 +244,8 @@ int main(int argc, char *argv[])
       if (pid == 0)
       {
         handleTheConnection(newfd);
+        printf("Done with the fork\n");
+        break;
       }
     }
   }

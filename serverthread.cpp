@@ -67,7 +67,7 @@ void handleRequest(int sockfd, char *fileName)
 {
   printf("Opening File: {%s} \n", fileName);
 
-  int length;
+  int size = 0;
   char buffer[10000];
 
   // std::ifstream file(fileName, ios::binary);
@@ -76,11 +76,12 @@ void handleRequest(int sockfd, char *fileName)
   int n = 0;
   int count = 0;
 
-  // nr of bytes
-  int size = ftell(file);
-
   if (file != NULL)
   {
+
+    // nr of bytes
+    size = ftell(file);
+
     while (!feof(file))
     {
       n = fread(buffer, 1, sizeof(buffer), file);
@@ -89,23 +90,6 @@ void handleRequest(int sockfd, char *fileName)
   }
   printf("count: %d", count);
   printf("Buffer: {%s}\n", buffer);
-  // if(file)
-  // {
-
-  //   printf("reading\n");
-  //   while(file->read(buffer,sizeof(buffer)))
-  //   {
-  //     printf("bytes read: {%d}\n",file->gcount());
-  //   }
-  // }
-  // else
-  // {
-  //   printf("failed to open binary file\n");
-  // }
-
-  // char* dataFromFile = malloc()
-
-  // ANVÄND FILENAME FÖR ATT LÄSA FILENS BINÄRA DATA
 
   char buf[20500];
   sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
@@ -115,7 +99,6 @@ void handleRequest(int sockfd, char *fileName)
   {
     printf("sending message error\n");
   }
-  
 };
 
 void *threadTest(void *arg)
@@ -141,8 +124,8 @@ void *threadTest(void *arg)
     return nullptr;
   }
 
-  printf("after strtok_r token: {%s}\n", token);
-  printf("data1: {%s}\n", method);
+  // printf("after strtok_r token: {%s}\n", token);
+  // printf("data1: {%s}\n", method);
 
   if (strcmp(method, "GET ") == 0)
   {
@@ -173,7 +156,20 @@ void *threadTest(void *arg)
       return nullptr;
     }
 
-    handleRequest(sockfd, fileName);
+    // got the right http protocol
+    if (strcmp(httpProtocol, "HTTP/1.1") == 0)
+    {
+      handleRequest(sockfd, fileName);
+    }
+    else
+    {
+      printf("wrong protocol sending error MSG\n");
+      char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
+      if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
+      {
+        printf("sending message error\n");
+      }
+    }
   }
   else
   {
