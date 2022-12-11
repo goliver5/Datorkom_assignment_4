@@ -30,7 +30,7 @@ int checkForChar(char p[], const char searchingFor = '/')
 
 void handleRequest(int sockfd, char *fileName)
 {
-  printf("Opening File: {%s} \n", fileName);
+  //printf("Opening File: {%s} \n", fileName);
 
   int length;
   // std::ifstream file(fileName, ios::binary);
@@ -44,7 +44,7 @@ void handleRequest(int sockfd, char *fileName)
 
   if (file != NULL)
   {
-    printf("Opened file %s\n", fileName);
+    //printf("Opened file %s\n", fileName);
     char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
     // sending msg back to client
     if (send(sockfd, ok, sizeof(ok), 0) == -1)
@@ -53,7 +53,7 @@ void handleRequest(int sockfd, char *fileName)
     }
     fseek(file, 0, SEEK_END);
     size = ftell(file);
-    printf("size: %d", size);
+    //printf("size: %d", size);
     fseek(file, 0, SEEK_SET);
 
     char buffer[size + 1];
@@ -64,11 +64,11 @@ void handleRequest(int sockfd, char *fileName)
       count += n;
     }
 
-    printf("closing file\n");
+    //printf("closing file\n");
     fclose(file);
 
-    printf("count: %d", count);
-    printf("Buffer: {%s}\n", buffer);
+    //printf("count: %d", count);
+    //printf("Buffer: {%s}\n", buffer);
 
     char buf[20000];
     memset(buf, 0, sizeof(buf));
@@ -78,17 +78,17 @@ void handleRequest(int sockfd, char *fileName)
     // sending msg back to client
     if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
     {
-      printf("sending message error\n");
+      //printf("sending message error\n");
     }
     else
     {
-      printf("Sent buffer size of buffer: %d\n", sizeof(buffer));
+      //printf("Sent buffer size of buffer: %d\n", sizeof(buffer));
     }
   }
   else
   {
     // Couldnt open requested file
-    printf("Couldnt open requested file\n");
+    //printf("Couldnt open requested file\n");
   }
 };
 
@@ -102,17 +102,17 @@ void handleTheConnection(int &sockfd)
 
   if (recv(sockfd, buf, sizeof(buf), 0) == -1)
   {
-    printf("recv error\n");
+    //printf("recv error\n");
   }
 
-  printf("recv buf: {%s}\n", buf);
+  //printf("recv buf: {%s}\n", buf);
   char *token = buf;
   char *method = strtok_r(token, "/", &token);
 
   // if the filename token returns null the given char is invalid
   if (method == NULL)
   {
-    printf("method token returned NULL, the given char is invalid\n");
+    //printf("method token returned NULL, the given char is invalid\n");
     return;
   }
 
@@ -125,19 +125,19 @@ void handleTheConnection(int &sockfd)
     // if the filename token returns null the given char is invalid
     if (fileName == NULL)
     {
-      printf("Filename token returned NULL, the given char is invalid\n");
+      //printf("Filename token returned NULL, the given char is invalid\n");
       return;
     }
-    printf("Token: {%s}\n", token);
+    //printf("Token: {%s}\n", token);
     char *httpProtocol = strtok_r(token, "\n", &token);
 
     if (httpProtocol == NULL)
     {
-      printf("httpProtocol token returned NULL, the given char is invalid\n");
+      //printf("httpProtocol token returned NULL, the given char is invalid\n");
       return;
     }
-    printf("FileName: {%s}\n", fileName);
-    printf("method: {%s}\n", method);
+    //printf("FileName: {%s}\n", fileName);
+    //printf("method: {%s}\n", method);
 
     // char lol[] = "HTTP/1.1";
     // for (int i = 0; i < 8; i++)
@@ -153,7 +153,7 @@ void handleTheConnection(int &sockfd)
     // printf("nrOfSlashes: %d\n", nrOfSlashes);
     if (nrOfSlashes > 3)
     {
-      printf("Given char contains more than 3 '/'\n");
+     // printf("Given char contains more than 3 '/'\n");
       return;
     }
     // got the right http protocol
@@ -173,9 +173,9 @@ void handleTheConnection(int &sockfd)
   }
   else
   {
-    printf("Wrong method\n");
+    //printf("Wrong method\n");
   }
-  printf("fork Done\n");
+  //printf("fork Done\n");
 
   // close(sockfd);
 };
@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
       if (pid == 0)
       {
         handleTheConnection(newfd);
-        printf("Done with the fork\n");
+        //printf("Done with the fork\n");
         close(newfd);
         return 0;
       }
@@ -283,6 +283,6 @@ int main(int argc, char *argv[])
     }
   }
 
-  printf("done.\n");
+  //printf("done.\n");
   return (0);
 }
