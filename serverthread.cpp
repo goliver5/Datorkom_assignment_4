@@ -37,7 +37,7 @@ int checkForCharPointerAddition(char looking[], const char searchingFor = '/')
 {
   int counter = 0;
   char *p = nullptr;
-  //printf("searchingFor: %c\n", searchingFor);
+  // printf("searchingFor: %c\n", searchingFor);
   p = (char *)malloc(strlen(looking) * sizeof(char));
   memcpy(p, looking, strlen(looking));
   char *startPointer = p;
@@ -66,11 +66,11 @@ void *get_in_addr(struct sockaddr *sa)
 
 void handleRequest(int sockfd, char *fileName)
 {
-  //printf("Opening File: {%s} \n", fileName);
+  // printf("Opening File: {%s} \n", fileName);
 
   int length;
   // std::ifstream file(fileName, ios::binary);
-  FILE *file = fopen(fileName, "rb");
+  FILE *file = fopen("randomFile", "rb");
 
   int size = 0;
   int n = 0;
@@ -80,16 +80,16 @@ void handleRequest(int sockfd, char *fileName)
 
   if (file != NULL)
   {
-    //printf("Opened file %s\n", fileName);
+    printf("Opened file %s\n", fileName);
     char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
     // sending msg back to client
-    if (send(sockfd, ok, sizeof(ok), 0) == -1)
-    {
-      //printf("sending message error\n");
-    }
+    // if (send(sockfd, ok, sizeof(ok), 0) == -1)
+    // {
+    //   //printf("sending message error\n");
+    // }
     fseek(file, 0, SEEK_END);
     size = ftell(file);
-    //printf("size: %d", size);
+    // printf("size: %d", size);
     fseek(file, 0, SEEK_SET);
 
     char buffer[size + 1];
@@ -100,31 +100,31 @@ void handleRequest(int sockfd, char *fileName)
       count += n;
     }
 
-    //printf("closing file\n");
+    printf("closing file\n");
     fclose(file);
 
-    //printf("count: %d", count);
-    //printf("Buffer: {%s}\n", buffer);
+    // printf("count: %d", count);
+    // printf("Buffer: {%s}\n", buffer);
 
     char buf[20000];
     memset(buf, 0, sizeof(buf));
 
-    // sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
+    sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
 
     // sending msg back to client
-    if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
+    if (send(sockfd, buf, strlen(buf), 0) == -1)
     {
-      //printf("sending message error\n");
+      // printf("sending message error\n");
     }
     else
     {
-    //  printf("Sent buffer size of buffer: %d\n", sizeof(buffer));
+      printf("Sent buffer size of buffer: %s\n", buf);
     }
   }
   else
   {
     // Couldnt open requested file
-    //printf("Couldnt open requested file\n");
+    // printf("Couldnt open requested file\n");
   }
 };
 
@@ -140,14 +140,14 @@ void *threadTest(void *arg)
     printf("recv error\n");
   }
 
-  //printf("recv buf: {%s}\n", buf);
+  // printf("recv buf: {%s}\n", buf);
   char *token = buf;
   char *method = strtok_r(token, "/", &token);
 
   // if the filename token returns null the given char is invalid
   if (method == NULL)
   {
-    //printf("method token returned NULL, the given char is invalid\n");
+    // printf("method token returned NULL, the given char is invalid\n");
     return nullptr;
   }
 
@@ -160,7 +160,7 @@ void *threadTest(void *arg)
     // if the filename token returns null the given char is invalid
     if (fileName == NULL)
     {
-      //printf("Filename token returned NULL, the given char is invalid\n");
+      // printf("Filename token returned NULL, the given char is invalid\n");
       close(sockfd);
       return nullptr;
     }
@@ -171,43 +171,30 @@ void *threadTest(void *arg)
     char *httpProtocol = strtok_r(token, "\n", &token);
     if (httpProtocol == NULL)
     {
-      //printf("httpProtocol token returned NULL, the given char is invalid\n");
+      // printf("httpProtocol token returned NULL, the given char is invalid\n");
       close(sockfd);
       return nullptr;
     }
-   // printf("Http protocl: {%s}\n", httpProtocol);
+    printf("Http protocl: {%s}\n", httpProtocol);
 
     int nrOfSlashes = checkForChar(fileName, '/');
-    //printf("nrOfSlashes: %d\n", nrOfSlashes);
+    // printf("nrOfSlashes: %d\n", nrOfSlashes);
     if (nrOfSlashes > 3)
     {
-      //printf("Given char contains more than 3 '/'\n");
+      // printf("Given char contains more than 3 '/'\n");
       close(sockfd);
       return nullptr;
     }
 
-    // got the right http protocol
-    // if (strcmp(httpProtocol, "HTTP/1.1") == 0)
-    // {
     pthread_mutex_lock(&mutex);
     handleRequest(sockfd, fileName);
     pthread_mutex_unlock(&mutex);
-    // }
-    // else
-    // {
-    //   printf("wrong protocol sending error MSG\n");
-    //   char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
-    //   if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
-    //   {
-    //     printf("sending message error\n");
-    //   }
-    // }
   }
   else
   {
-    //printf("Wrong method\n");
+    // printf("Wrong method\n");
   }
-  //printf("thread test Done\n");
+  // printf("thread test Done\n");
 
   close(sockfd);
   free(arg);
@@ -216,11 +203,11 @@ void *threadTest(void *arg)
 
 int main(int argc, char *argv[])
 {
-  // if(argc < 0) FUNKAR INTE
-  // {
-  //   printf("not enough arguments\n");
-  //   return(0);
-  // }
+  if (argc != 2)
+  {
+    printf("not enough arguments\n");
+    return (0);
+  }
 
   char *hoststring, *portstring, *rest, *org;
   org = strdup(argv[1]);
@@ -228,6 +215,12 @@ int main(int argc, char *argv[])
   hoststring = strtok_r(rest, ":", &rest);
   portstring = strtok_r(rest, ":", &rest);
   printf("Got %s \nsplit into %s and %s \n", org, hoststring, portstring);
+
+  if (hoststring == NULL || portstring == NULL)
+  {
+    printf("Wrong arguments\n");
+    return (0);
+  }
 
   char remoteIP[INET6_ADDRSTRLEN];
   int yes = 1;                        // for setsockopt() SO_REUSEADDR, below
@@ -272,14 +265,9 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  // pthread_create(thread,its attribute, the function to run, args to that function)
-  // pthread_create(&testThread, NULL, threadTest, NULL);
-  // pthread_join(testThread, NULL);
-
   // thread test
   pthread_t testThread;
   void *ret_join;
-
 
   while (1)
   {
@@ -290,8 +278,8 @@ int main(int argc, char *argv[])
                        (struct sockaddr *)&remoteaddr,
                        &addrlen);
 
-    int* ptr = new int;
-     *ptr = newfd;
+    int *ptr = new int;
+    *ptr = newfd;
 
     if (newfd == -1)
     {
