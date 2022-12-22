@@ -70,7 +70,7 @@ void handleRequest(int sockfd, char *fileName)
 
   int length;
   // std::ifstream file(fileName, ios::binary);
-  FILE *file = fopen("randomFile", "rb");
+  FILE *file = fopen(fileName, "rb");
 
   int size = 0;
   int n = 0;
@@ -80,13 +80,7 @@ void handleRequest(int sockfd, char *fileName)
 
   if (file != NULL)
   {
-    printf("Opened file %s\n", fileName);
-    char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
-    // sending msg back to client
-    // if (send(sockfd, ok, sizeof(ok), 0) == -1)
-    // {
-    //   //printf("sending message error\n");
-    // }
+    //printf("Opened file %s\n", fileName);
     fseek(file, 0, SEEK_END);
     size = ftell(file);
     // printf("size: %d", size);
@@ -118,7 +112,7 @@ void handleRequest(int sockfd, char *fileName)
     }
     else
     {
-      printf("Sent buffer size of buffer: %s\n", buf);
+      //printf("Sent buffer size of buffer: %s\n", buf);
     }
   }
   else

@@ -30,7 +30,7 @@ int checkForChar(char p[], const char searchingFor = '/')
 
 void handleRequest(int sockfd, char *fileName)
 {
-  //printf("Opening File: {%s} \n", fileName);
+  // printf("Opening File: {%s} \n", fileName);
 
   int length;
   // std::ifstream file(fileName, ios::binary);
@@ -44,16 +44,16 @@ void handleRequest(int sockfd, char *fileName)
 
   if (file != NULL)
   {
-    //printf("Opened file %s\n", fileName);
-    char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
+    printf("Opened file %s\n", fileName);
+    //char ok[] = "HTTP/1.1 200 OK \r\n\r\n";
     // sending msg back to client
-    if (send(sockfd, ok, sizeof(ok), 0) == -1)
-    {
-      printf("sending message error\n");
-    }
+    // if (send(sockfd, ok, sizeof(ok), 0) == -1)
+    // {
+    //   //printf("sending message error\n");
+    // }
     fseek(file, 0, SEEK_END);
     size = ftell(file);
-    //printf("size: %d", size);
+    // printf("size: %d", size);
     fseek(file, 0, SEEK_SET);
 
     char buffer[size + 1];
@@ -64,31 +64,31 @@ void handleRequest(int sockfd, char *fileName)
       count += n;
     }
 
-    //printf("closing file\n");
+    printf("closing file\n");
     fclose(file);
 
-    //printf("count: %d", count);
-    //printf("Buffer: {%s}\n", buffer);
+    // printf("count: %d", count);
+    // printf("Buffer: {%s}\n", buffer);
 
     char buf[20000];
     memset(buf, 0, sizeof(buf));
 
-    // sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
+    sprintf(buf, "HTTP/1.1 200 OK\r\n\r\n%s", buffer);
 
     // sending msg back to client
-    if (send(sockfd, buffer, sizeof(buffer), 0) == -1)
+    if (send(sockfd, buf, strlen(buf), 0) == -1)
     {
-      //printf("sending message error\n");
+      // printf("sending message error\n");
     }
     else
     {
-      //printf("Sent buffer size of buffer: %d\n", sizeof(buffer));
+      //printf("Sent buffer size of buffer: %s\n", buf);
     }
   }
   else
   {
     // Couldnt open requested file
-    //printf("Couldnt open requested file\n");
+    // printf("Couldnt open requested file\n");
   }
 };
 
@@ -136,18 +136,7 @@ void handleTheConnection(int &sockfd)
       //printf("httpProtocol token returned NULL, the given char is invalid\n");
       return;
     }
-    //printf("FileName: {%s}\n", fileName);
-    //printf("method: {%s}\n", method);
 
-    // char lol[] = "HTTP/1.1";
-    // for (int i = 0; i < 8; i++)
-    // {
-    //   printf("compare: {%c} = {%c}",token[i],lol[i]);
-    //   if(httpProtocol[i] != lol[i])
-    //   {
-    //     printf("cmpr failed: {%c} = {%c}",token[i],lol[i]);
-    //   }
-    // }
 
     int nrOfSlashes = checkForChar(fileName, '/');
     // printf("nrOfSlashes: %d\n", nrOfSlashes);
@@ -156,28 +145,15 @@ void handleTheConnection(int &sockfd)
      // printf("Given char contains more than 3 '/'\n");
       return;
     }
-    // got the right http protocol
-    // if (strcmp(httpProtocol, "HTTP/1.1") == 0)
-    // {
+
       handleRequest(sockfd, fileName);
-    // }
-    // else
-    // {
-    //   printf("wrong HTTP/1.1 protocol sending error MSG\n");
-    //   char errorMsg[40] = "400 Unknown protocol\r\n\r\n";
-    //   if (send(sockfd, errorMsg, sizeof(errorMsg), 0) == -1)
-    //   {
-    //     printf("sending message error\n");
-    //   }
-    // }
+
   }
   else
   {
     //printf("Wrong method\n");
   }
-  //printf("fork Done\n");
 
-  // close(sockfd);
 };
 
 void *get_in_addr(struct sockaddr *sa)
